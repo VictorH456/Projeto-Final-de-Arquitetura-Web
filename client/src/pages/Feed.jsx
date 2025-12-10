@@ -1,17 +1,101 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react'; 
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const styles = {
-    container: {
-        maxWidth: '750px', // Aumentar um pouco o container
+    // Estilos atualizados para o layout de 3 colunas
+    mainLayout: {
+        display: 'flex', 
+        maxWidth: '1300px', 
         margin: '0 auto',
         padding: '30px 20px',
-        backgroundColor: '#f5f7f9', // Fundo levemente cinza
+        backgroundColor: '#f5f7f9',
         minHeight: '100vh',
         fontFamily: 'Arial, sans-serif'
     },
+    
+    // BARRA LATERAL ESQUERDA (Menu/Pesquisa)
+    leftSidebar: {
+        flex: '0 0 250px', 
+        marginRight: '30px',
+        padding: '20px',
+        backgroundColor: 'white',
+        borderRadius: '10px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+        alignSelf: 'flex-start',
+        position: 'sticky', 
+        top: '30px', 
+        height: 'fit-content',
+    },
+
+    // CONTEÚDO PRINCIPAL (Feed)
+    feedContent: {
+        flex: 1, 
+        minWidth: '550px', 
+        marginRight: '30px',
+    },
+
+    // BARRA LATERAL DIREITA (Posts do Autor Clicado)
+    rightSidebar: {
+        flex: '0 0 300px', 
+        padding: '20px',
+        backgroundColor: 'white',
+        borderRadius: '10px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+        alignSelf: 'flex-start',
+        position: 'sticky', 
+        top: '30px', 
+        height: 'fit-content',
+    },
+
+    // Estilos de Perfil e Pesquisa
+    profileCard: {
+        textAlign: 'center',
+        marginBottom: '25px',
+        paddingBottom: '15px',
+        borderBottom: '1px solid #e0e0e0',
+    },
+    profileName: {
+        fontSize: '1.2em',
+        fontWeight: 'bold',
+        color: '#1e3a8a',
+        marginTop: '10px',
+    },
+    profileRole: {
+        fontSize: '0.9em',
+        color: '#6b7280',
+    },
+    searchSection: {
+        marginBottom: '25px',
+    },
+    searchInput: {
+        width: '100%',
+        padding: '10px',
+        borderRadius: '5px',
+        border: '1px solid #d1d5db',
+        fontSize: '1em',
+        boxSizing: 'border-box',
+    },
+    searchTitle: {
+        fontSize: '1em',
+        fontWeight: '600',
+        color: '#4b5563',
+        marginBottom: '10px',
+    },
+
+    // Estilos de Posts do Usuário (para a sidebar direita)
+    authorPostCard: {
+        padding: '12px',
+        marginBottom: '10px',
+        borderRadius: '6px',
+        backgroundColor: '#f0f9ff',
+        borderLeft: '4px solid #3b82f6',
+        fontSize: '0.9em',
+        transition: 'background-color 0.2s',
+    },
+
+    // Estilos de Feed e Posts
     header: {
         display: 'flex',
         justifyContent: 'space-between',
@@ -21,7 +105,7 @@ const styles = {
         borderBottom: '1px solid #e0e0e0',
     },
     title: {
-        color: '#1e3a8a', // Azul escuro
+        color: '#1e3a8a',
         fontSize: '1.8em',
         fontWeight: '700',
     },
@@ -33,7 +117,7 @@ const styles = {
     },
     logoutButton: {
         marginLeft: '15px',
-        background: '#ef4444', // Vermelho moderno
+        background: '#ef4444',
         color: 'white',
         border: 'none',
         padding: '8px 15px',
@@ -47,7 +131,7 @@ const styles = {
         backgroundColor: 'white',
         padding: '20px',
         borderRadius: '10px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)', // Sombra para destaque
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
     },
     textarea: {
         width: '100%',
@@ -61,7 +145,7 @@ const styles = {
         fontSize: '1em',
     },
     postButton: {
-        background: '#10b981', // Verde suave para Ação Principal
+        background: '#10b981',
         color: 'white',
         border: 'none',
         padding: '10px 20px',
@@ -70,16 +154,23 @@ const styles = {
         fontWeight: 'bold',
         transition: 'background 0.2s',
         display: 'block',
-        marginLeft: 'auto', // Alinhar à direita
+        marginLeft: 'auto',
     },
     postCard: {
         position: 'relative',
-        border: 'none', // Remover borda forte
+        border: 'none',
         padding: '20px',
         marginBottom: '20px',
         borderRadius: '10px',
         backgroundColor: 'white',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)', // Sombra sutil para card
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+        transition: 'all 0.3s ease-in-out', 
+    },
+    // NOVO ESTILO: Para destacar o post após a rolagem
+    highlightedPost: {
+        backgroundColor: '#fffbeb', 
+        border: '3px solid #f97316', 
+        transform: 'scale(1.01)',
     },
     postContent: {
         fontSize: '1.1em',
@@ -88,230 +179,448 @@ const styles = {
         lineHeight: '1.6',
     },
     postMetadata: {
-        color: '#6b7280', // Cinza para info secundária
+        color: '#6b7280',
         fontSize: '0.85em',
         display: 'block',
         marginBottom: '10px',
     },
     deleteButton: {
         position: 'absolute',
-        top: '15px',
-        right: '15px',
+        top: '10px',
+        right: '10px',
         background: 'transparent',
+        border: 'none',
         color: '#ef4444',
-        border: '1px solid #ef4444',
-        padding: '4px 8px',
-        borderRadius: '5px',
         cursor: 'pointer',
         fontSize: '0.8em',
         fontWeight: 'bold',
-        zIndex: 10,
     },
     commentSection: {
-        background: '#f9fafb', // Fundo leve para comentários
-        padding: '15px',
-        borderRadius: '8px',
-        marginTop: '15px',
+        marginTop: '20px',
+        paddingTop: '10px',
     },
     commentTitle: {
-        margin: '0 0 10px 0',
         fontSize: '1em',
         fontWeight: '600',
         color: '#4b5563',
+        marginBottom: '10px',
     },
     commentText: {
-        fontSize: '0.85em',
-        marginBottom: '8px',
-        borderBottom: '1px dotted #e5e7eb',
-        paddingBottom: '5px',
-        lineHeight: '1.4',
+        fontSize: '0.9em',
+        marginBottom: '5px',
+        padding: '5px 10px',
+        backgroundColor: '#f9fafb',
+        borderRadius: '4px',
+        display: 'flex', // Para alinhar o like do comentário
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     commentForm: {
-        marginTop: '10px',
         display: 'flex',
-        alignItems: 'center',
+        marginTop: '10px',
     },
     commentInput: {
         flex: 1,
         padding: '8px',
-        fontSize: '0.9em',
+        borderRadius: '5px 0 0 5px',
         border: '1px solid #d1d5db',
-        borderRadius: '5px',
+        borderRight: 'none',
     },
     commentSendButton: {
-        marginLeft: '8px',
-        padding: '8px 15px',
-        fontSize: '0.85em',
-        background: '#3b82f6', // Azul para Comentário
+        background: '#3b82f6',
         color: 'white',
         border: 'none',
+        padding: '8px 15px',
+        borderRadius: '0 5px 5px 0',
         cursor: 'pointer',
-        borderRadius: '5px',
         fontWeight: 'bold',
-        transition: 'background 0.2s',
-    }
+    },
+    // NOVOS ESTILOS PARA LIKES
+    likeSection: {
+        padding: '5px 0 0 0',
+        borderTop: '1px solid #f3f4f6', // Separador visual
+        display: 'flex',
+        justifyContent: 'flex-end', 
+    },
+    likeButton: {
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '1em',
+        fontWeight: 'bold',
+        padding: '5px 10px',
+        transition: 'color 0.2s',
+        display: 'block',
+    },
+    commentLikeButton: {
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '0.85em',
+        padding: '0 5px',
+        fontWeight: 'bold',
+        transition: 'color 0.2s',
+        marginLeft: '10px',
+    },
 };
 
 function Feed() {
     const [posts, setPosts] = useState([]);
     const [novoPost, setNovoPost] = useState('');
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    // Estados para a barra lateral direita de posts do autor
+    const [selectedAuthorId, setSelectedAuthorId] = useState(null);
+    const [authorPosts, setAuthorPosts] = useState([]);
+    const [authorName, setAuthorName] = useState('Selecione um Autor');
+
+    // NOVO ESTADO: Armazena o ID do post que deve ser destacado/rolado
+    const [highlightedPostId, setHighlightedPostId] = useState(null);
+
+    // NOVO: Coleção de referências para os posts
+    const postRefs = useRef({});
 
     const { user, logout } = useContext(AuthContext); 
     const navigate = useNavigate();
 
-    // Função para buscar posts do Backend
-    const carregarPosts = async () => {
+    // ------------------------------------------------------------------
+    // FUNÇÕES DE LIKE (NOVAS)
+    // ------------------------------------------------------------------
+    const handleLikePost = async (postId) => {
+        const token = localStorage.getItem('token');
         try {
-            const res = await axios.get('http://localhost:5000/api/posts');
+            await axios.put(`http://localhost:5000/api/posts/like/${postId}`, {}, { 
+                headers: { 'x-auth-token': token } 
+            });
+            carregarPosts(searchTerm); 
+        } catch (error) {
+            alert('Erro ao curtir post. Você está logado?');
+        }
+    };
+
+    const handleLikeComment = async (commentId) => {
+        const token = localStorage.getItem('token');
+        try {
+            await axios.put(`http://localhost:5000/api/posts/comments/like/${commentId}`, {}, { 
+                headers: { 'x-auth-token': token } 
+            });
+            carregarPosts(searchTerm); 
+        } catch (error) {
+            alert('Erro ao curtir comentário. Você está logado?');
+        }
+    };
+    // ------------------------------------------------------------------
+    
+
+    // Função para rolar até o post e destacá-lo
+    const scrollToPost = (postId) => {
+        const element = postRefs.current[postId];
+
+        if (element) {
+            setHighlightedPostId(postId); 
+            
+            element.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+
+            setTimeout(() => {
+                setHighlightedPostId(null);
+            }, 3000);
+        } else {
+             alert("O post original não está visível no feed atual (pode ter sido filtrado ou excluído).");
+        }
+    };
+
+
+    // Função para buscar posts do Backend (inclui pesquisa)
+    const carregarPosts = async (term = '') => {
+        setLoading(true);
+        try {
+            const url = `http://localhost:5000/api/posts${term ? `?search=${term}` : ''}`;
+            const res = await axios.get(url);
             setPosts(res.data);
             setLoading(false);
+            setHighlightedPostId(null); 
         } catch (error) {
             console.error("Erro ao buscar posts:", error);
             setLoading(false);
         }
     };
 
-    // Carrega os posts assim que a tela abre
+    // Carrega os posts iniciais e reage à pesquisa
     useEffect(() => {
-        carregarPosts();
-    }, []);
+        carregarPosts(searchTerm);
+    }, [searchTerm]); 
+    
+    // Função para carregar posts de um usuário específico
+    const handleViewAuthorPosts = async (authorId, name) => {
+        if (selectedAuthorId === authorId) {
+            setSelectedAuthorId(null);
+            setAuthorName('Selecione um Autor');
+            setAuthorPosts([]);
+            return;
+        }
 
-    // Função para criar novo post
+        setSelectedAuthorId(authorId);
+        setAuthorName(name);
+        setAuthorPosts([]);
+
+        try {
+            const res = await axios.get(`http://localhost:5000/api/posts/user/${authorId}`);
+            setAuthorPosts(res.data);
+        } catch (error) {
+            console.error("Erro ao buscar posts do autor:", error);
+            setAuthorPosts([{ _id: 'error', conteudo: 'Não foi possível carregar os posts do autor.', dataCriacao: new Date() }]);
+        }
+    };
+
+    // Funções de CRUD (mantidas)
     const handleCriarPost = async (e) => {
         e.preventDefault();
         const token = localStorage.getItem('token'); 
-
         try {
-            await axios.post('http://localhost:5000/api/posts',
-                { conteudo: novoPost },
-                { headers: { 'x-auth-token': token } } 
-            );
+            await axios.post('http://localhost:5000/api/posts', { conteudo: novoPost }, { headers: { 'x-auth-token': token } });
             setNovoPost(''); 
-            carregarPosts(); 
+            carregarPosts(searchTerm); 
         } catch (error) {
             alert('Erro ao criar post. Você está logado?');
         }
     };
 
-    // Função para deletar (Só funciona se for Admin)
     const handleDeletar = async (id) => {
         if (!window.confirm("Tem certeza que deseja excluir?")) return;
-
         const token = localStorage.getItem('token');
         try {
-            await axios.delete(`http://localhost:5000/api/posts/${id}`,
-                { headers: { 'x-auth-token': token } }
-            );
-            carregarPosts(); 
+            await axios.delete(`http://localhost:5000/api/posts/${id}`, { headers: { 'x-auth-token': token } });
+            carregarPosts(searchTerm); 
         } catch (error) {
             alert('Erro: Talvez você não tenha permissão de Admin.');
         }
     };
+    
+    // Função de Comentar (modificada para manter o filtro de pesquisa)
+    const handleComentar = async (e, postId) => {
+        e.preventDefault();
+        const texto = e.target.elements.comentario.value;
+        const token = localStorage.getItem('token');
+        
+        if (!texto) return;
+
+        try {
+            await axios.post(`http://localhost:5000/api/posts/${postId}/comments`,
+                { texto },
+                { headers: { 'x-auth-token': token } }
+            );
+            e.target.reset(); 
+            carregarPosts(searchTerm); 
+        } catch (error) {
+            alert('Erro ao comentar. Verifique seu login.');
+        }
+    };
+
 
     return (
-        <div style={styles.container}>
+        <div style={styles.mainLayout}>
 
-            {/* Cabeçalho */}
-            <header style={styles.header}>
-                <h2 style={styles.title}>Feed Acadêmico 💡</h2>
-                <div style={styles.userInfo}>
-                    <span>Olá, <strong>{user?.nome}</strong> ({user?.role}) </span>
-                    <button 
-                        onClick={() => { logout(); navigate('/'); }} 
-                        style={styles.logoutButton}
-                    >
-                        Sair
-                    </button>
-                </div>
-            </header>
-
-            {/* Formulário de Novo Post */}
-            <form onSubmit={handleCriarPost} style={styles.formContainer}>
-                <textarea
-                    value={novoPost}
-                    onChange={(e) => setNovoPost(e.target.value)}
-                    placeholder="Compartilhe sua dúvida, recurso, ou conhecimento com a comunidade..."
-                    required
-                    style={styles.textarea}
-                />
-                <button type="submit" style={styles.postButton}>
-                    Publicar
-                </button>
-            </form>
-
-            {/* Lista de Posts */}
-            {loading ? (
-                <p style={{ textAlign: 'center', color: '#666' }}>Carregando posts...</p>
-            ) : (
-                posts.map((post) => (
-                    <div key={post._id} style={styles.postCard}>
-                        {/* Botão Excluir (Admin) */}
-                        {user?.role === 'admin' && (
-                            <button
-                                onClick={() => handleDeletar(post._id)}
-                                style={styles.deleteButton}
-                            >
-                                [X] Excluir
-                            </button>
-                        )}
-
-                        <p style={styles.postContent}>{post.conteudo}</p>
-                        <small style={styles.postMetadata}>
-                            Por: **{post.autor?.nome}** em {new Date(post.dataCriacao).toLocaleDateString()}
-                        </small>
-
-                        <hr style={{ margin: '15px 0', border: '0', borderTop: '1px solid #f3f4f6' }} />
-
-                        {/* Área de Comentários */}
-                        <div style={styles.commentSection}>
-                            <h4 style={styles.commentTitle}>Comentários:</h4>
-
-                            {post.comments && post.comments.map(comment => (
-                                <div key={comment._id} style={styles.commentText}>
-                                    **{comment.autor?.nome}:** {comment.texto}
-                                </div>
-                            ))}
-
-                            {post.comments?.length === 0 && <p style={{ fontSize: '0.8em', color: '#999' }}>Seja o primeiro a comentar!</p>}
-
-                            {/* Formulário de Comentar */}
-                            <form
-                                onSubmit={async (e) => {
-                                    e.preventDefault();
-                                    const texto = e.target.elements.comentario.value;
-                                    const token = localStorage.getItem('token');
-                                    
-                                    if (!texto) return;
-
-                                    try {
-                                        await axios.post(`http://localhost:5000/api/posts/${post._id}/comments`,
-                                            { texto },
-                                            { headers: { 'x-auth-token': token } }
-                                        );
-                                        e.target.reset(); // Limpa o input
-                                        carregarPosts(); // Atualiza a tela
-                                    } catch (error) {
-                                        alert('Erro ao comentar. Verifique seu login.');
-                                    }
-                                }}
-                                style={styles.commentForm}
-                            >
-                                <input
-                                    name="comentario"
-                                    type="text"
-                                    placeholder="Adicionar um comentário..."
-                                    required
-                                    style={styles.commentInput}
-                                />
-                                <button type="submit" style={styles.commentSendButton}>
-                                    Enviar
-                                </button>
-                            </form>
-                        </div>
+            {/* 1. BARRA LATERAL ESQUERDA (MENU / PESQUISA) */}
+            <div style={styles.leftSidebar}>
+                
+                {/* Card de Perfil Logado */}
+                <div style={styles.profileCard}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#e0e7ff', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2em', color: '#3b82f6' }}>
+                        {user?.nome ? user.nome[0].toUpperCase() : 'U'}
                     </div>
-                ))
-            )}
+                    <p style={styles.profileName}>{user?.nome || 'Usuário Desconhecido'}</p>
+                    <p style={styles.profileRole}>{user?.role || 'Visitante'}</p>
+                </div>
+                
+                {/* Mecanismo de Pesquisa */}
+                <div style={styles.searchSection}>
+                    <h4 style={styles.searchTitle}>🔍 Pesquisar no Feed</h4>
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar posts por conteúdo..."
+                        style={styles.searchInput}
+                    />
+                </div>
+            </div>
+
+
+            {/* 2. CONTEÚDO PRINCIPAL (FEED) */}
+            <div style={styles.feedContent}>
+                
+                <header style={styles.header}>
+                    <h2 style={styles.title}>Feed Acadêmico 💡</h2>
+                    <div style={styles.userInfo}>
+                        <span>Olá, <strong>{user?.nome}</strong> ({user?.role}) </span>
+                        <button 
+                            onClick={() => { logout(); navigate('/'); }} 
+                            style={styles.logoutButton}
+                        >
+                            Sair
+                        </button>
+                    </div>
+                </header>
+
+                {/* Formulário de Novo Post */}
+                <form onSubmit={handleCriarPost} style={styles.formContainer}>
+                    <textarea
+                        value={novoPost}
+                        onChange={(e) => setNovoPost(e.target.value)}
+                        placeholder="Compartilhe sua dúvida, recurso, ou conhecimento com a comunidade..."
+                        required
+                        style={styles.textarea}
+                    />
+                    <button type="submit" style={styles.postButton}>
+                        Publicar
+                    </button>
+                </form>
+
+                {/* Lista de Posts */}
+                {loading ? (
+                    <p style={{ textAlign: 'center', color: '#666' }}>Carregando posts...</p>
+                ) : posts.length === 0 && searchTerm ? (
+                    <p style={{ textAlign: 'center', color: '#666' }}>Nenhum post encontrado para "**{searchTerm}**".</p>
+                ) : (
+                    posts.map((post) => (
+                        <div 
+                            key={post._id} 
+                            // 1. Associa a referência ao elemento DOM
+                            ref={el => postRefs.current[post._id] = el}
+                            style={{
+                                ...styles.postCard,
+                                // 2. Aplica o estilo de destaque se o ID corresponder
+                                ...(highlightedPostId === post._id ? styles.highlightedPost : {})
+                            }}
+                        >
+                            {/* Botão Excluir (Admin) */}
+                            {user?.role === 'admin' && (
+                                <button
+                                    onClick={() => handleDeletar(post._id)}
+                                    style={styles.deleteButton}
+                                >
+                                    [X] Excluir
+                                </button>
+                            )}
+
+                            <p style={styles.postContent}>{post.conteudo}</p>
+                            
+                            {/* CLIQUE AQUI PARA ATUALIZAR A SIDEBAR DIREITA */}
+                            <small style={styles.postMetadata}>
+                                Por: 
+                                <span 
+                                    onClick={() => handleViewAuthorPosts(post.autor._id, post.autor.nome)} 
+                                    style={{ 
+                                        cursor: 'pointer', 
+                                        color: selectedAuthorId === post.autor._id ? '#ef4444' : '#1e3a8a', 
+                                        fontWeight: 'bold', 
+                                        textDecoration: 'underline' 
+                                    }}
+                                >
+                                    {post.autor?.nome}
+                                </span> 
+                                em {new Date(post.dataCriacao).toLocaleDateString()}
+                            </small>
+                            
+                            {/* NOVO: Seção de Like do Post */}
+                            <div style={styles.likeSection}>
+                                <button
+                                    onClick={() => handleLikePost(post._id)}
+                                    style={{
+                                        ...styles.likeButton,
+                                        // Verifica se o ID do usuário está no array de likes
+                                        color: post.likes && post.likes.includes(user?.id) ? '#ef4444' : '#6b7280' 
+                                    }}
+                                >
+                                    ❤️ ({post.likes?.length || 0})
+                                </button>
+                            </div>
+
+                            <hr style={{ margin: '15px 0', border: '0', borderTop: '1px solid #f3f4f6' }} />
+
+                            {/* Área de Comentários */}
+                            <div style={styles.commentSection}>
+                                <h4 style={styles.commentTitle}>Comentários:</h4>
+
+                                {post.comments && post.comments.map(comment => (
+                                    <div key={comment._id} style={styles.commentText}>
+                                        <span>
+                                            <strong>{comment.autor?.nome}:</strong> {comment.texto}
+                                        </span>
+                                        {/* NOVO: Like do Comentário */}
+                                        <button
+                                            onClick={() => handleLikeComment(comment._id)}
+                                            style={{
+                                                ...styles.commentLikeButton,
+                                                color: comment.likes && comment.likes.includes(user?.id) ? '#3b82f6' : '#9ca3af' 
+                                            }}
+                                        >
+                                            👍 ({comment.likes?.length || 0})
+                                        </button>
+                                    </div>
+                                ))}
+
+                                {post.comments?.length === 0 && <p style={{ fontSize: '0.8em', color: '#999' }}>Seja o primeiro a comentar!</p>}
+
+                                {/* Formulário de Comentar */}
+                                <form
+                                    onSubmit={(e) => handleComentar(e, post._id)}
+                                    style={styles.commentForm}
+                                >
+                                    <input
+                                        name="comentario"
+                                        type="text"
+                                        placeholder="Adicionar um comentário..."
+                                        required
+                                        style={styles.commentInput}
+                                    />
+                                    <button type="submit" style={styles.commentSendButton}>
+                                        Enviar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* 3. BARRA LATERAL DIREITA (POSTS DO AUTOR) */}
+            <div style={styles.rightSidebar}>
+                <h3 style={{ fontSize: '1.2em', color: '#1e3a8a', marginBottom: '15px', borderBottom: '1px solid #e0e0e0', paddingBottom: '10px' }}>
+                    ✍️ Posts de {authorName}
+                </h3>
+
+                {selectedAuthorId === null ? (
+                    <p style={{ color: '#6b7280', fontSize: '0.9em' }}>Clique no nome de um autor para ver seus posts aqui.</p>
+                ) : authorPosts.length === 0 ? (
+                    <p>Carregando posts...</p>
+                ) : (
+                    authorPosts.map(post => (
+                        <div 
+                            key={post._id} 
+                            style={{ 
+                                ...styles.authorPostCard,
+                                cursor: 'pointer', 
+                            }}
+                            // Ao clicar, rola e destaca o post no feed principal
+                            onClick={() => scrollToPost(post._id)}
+                        >
+                            <p style={{ margin: '0 0 5px 0' }}>
+                                {post.conteudo.substring(0, 80)}
+                                {post.conteudo.length > 80 ? '...' : ''}
+                                <span style={{ color: '#10b981', fontWeight: 'bold' }}> [Ver Original]</span>
+                            </p>
+                            <small style={{ color: '#6b7280' }}>
+                                Publicado em {new Date(post.dataCriacao).toLocaleDateString()}
+                            </small>
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
     );
 }
