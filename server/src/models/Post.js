@@ -7,10 +7,10 @@ const PostSchema = new mongoose.Schema({
     },
     autor: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // Faz referência ao modelo 'User' acima
+        ref: 'User', 
         required: true
     },
-    likes: [{ // Bônus: Array com IDs de quem curtiu (simples)
+    likes: [{ 
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],

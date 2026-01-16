@@ -15,6 +15,12 @@ const CommentSchema = new mongoose.Schema({
         ref: 'Post', // Liga o comentário ao Post específico
         required: true
     },
+    // --- NOVO: Campo necessário para a função de curtir comentários ---
+    likes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    // ------------------------------------------------------------------
     dataCriacao: {
         type: Date,
         default: Date.now
