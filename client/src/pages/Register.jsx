@@ -4,77 +4,105 @@ import { useNavigate, Link } from 'react-router-dom';
 
 const styles = {
     pageWrapper: {
-        backgroundColor: '#f5f7f9', 
+        backgroundColor: '#f1f5f9', 
+        backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+        backgroundSize: '30px 30px',
         minHeight: '100vh', 
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center',
-        fontFamily: 'Arial, sans-serif'
+        fontFamily: '"Inter", sans-serif'
     },
     container: {
-        padding: '30px',
+        padding: '40px',
         maxWidth: '450px',
         width: '90%',
         backgroundColor: 'white',
-        border: 'none',
-        borderRadius: '12px',
-        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1)',
+        border: '2px solid #0f172a',
+        borderRadius: '20px',
+        boxShadow: '12px 12px 0px #0f172a',
     },
     title: {
         textAlign: 'center',
-        marginBottom: '25px',
-        color: '#1e3a8a',
-        fontSize: '2em',
+        marginBottom: '10px',
+        color: '#0f172a',
+        fontSize: '1.8em',
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        letterSpacing: '-1px'
+    },
+    subtitle: {
+        textAlign: 'center',
+        marginBottom: '30px',
+        color: '#64748b',
+        fontSize: '0.9em',
     },
     inputGroup: {
-        marginBottom: '20px',
+        marginBottom: '15px',
     },
     label: {
         display: 'block',
-        marginBottom: '5px',
-        fontWeight: '500',
-        color: '#374151',
+        marginBottom: '8px',
+        fontWeight: '700',
+        color: '#0f172a',
+        fontSize: '0.85rem',
+        textTransform: 'uppercase'
     },
     input: {
         width: '100%',
         padding: '12px',
         boxSizing: 'border-box',
-        border: '1px solid #d1d5db',
-        borderRadius: '8px',
+        border: '2px solid #0f172a',
+        borderRadius: '12px',
         fontSize: '1em',
+        backgroundColor: '#f8fafc',
+        outline: 'none',
+    },
+    adminBox: {
+        backgroundColor: '#f1f5f9',
+        padding: '15px',
+        borderRadius: '12px',
+        border: '2px dashed #cbd5e1',
+        marginTop: '10px',
+        marginBottom: '20px'
     },
     adminLabel: {
-        fontSize: '0.8em',
-        color: '#6b7280',
+        fontSize: '0.75em',
+        color: '#64748b',
+        fontWeight: 'bold',
         display: 'block',
         marginBottom: '5px',
+        textTransform: 'uppercase'
     },
     button: {
         width: '100%',
-        padding: '12px',
-        backgroundColor: '#10b981', // Verde para Cadastro (Success)
-        color: 'white',
+        padding: '14px',
+        backgroundColor: '#0f172a', 
+        color: '#fbbf24', 
         border: 'none',
-        borderRadius: '8px',
+        borderRadius: '12px',
         cursor: 'pointer',
         fontSize: '1.1em',
-        fontWeight: 'bold',
-        transition: 'background 0.2s',
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        boxShadow: '4px 4px 0px #fbbf24',
+        marginTop: '10px',
+        transition: 'all 0.1s',
     },
     linkText: {
-        marginTop: '15px',
+        marginTop: '20px',
         textAlign: 'center',
-        color: '#6b7280',
+        color: '#64748b',
+        fontSize: '0.9rem',
     }
 };
-
 
 function Register() {
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     senha: '',
-    adminCode: '' // Truque para criar admin via front (só para testes escolares)
+    adminCode: ''
   });
   
   const navigate = useNavigate();
@@ -83,10 +111,26 @@ function Register() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Função para validar se o e-mail tem um formato real
+  const isEmailValid = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Define o papel baseado no código secreto (apenas para facilitar seus testes)
+
+    // 1. Validação de E-mail
+    if (!isEmailValid(formData.email)) {
+        alert('Por favor, insira um e-mail válido (ex: usuario@dominio.com)');
+        return;
+    }
+
+    // 2. Validação de Senha (Mínimo 4 caracteres)
+    if (formData.senha.length < 4) {
+        alert('A senha deve ter no mínimo 4 caracteres.');
+        return;
+    }
+
     const role = formData.adminCode === 'admin123' ? 'admin' : 'aluno';
 
     try {
@@ -98,42 +142,80 @@ function Register() {
       });
       
       alert('Cadastro realizado com sucesso! Faça login.');
-      navigate('/'); // Manda o usuário para a tela de login
+      navigate('/'); 
     } catch (error) {
-      alert('Erro ao cadastrar. Verifique se o email já existe.');
+      alert('Erro ao cadastrar. Verifique se o e-mail já existe ou se há erro no servidor.');
     }
   };
 
   return (
     <div style={styles.pageWrapper}>
         <div style={styles.container}>
-            <h2 style={styles.title}>Criar Conta Acadêmica</h2>
+            <h2 style={styles.title}>Feed Acadêmico 💡</h2>
+            <p style={styles.subtitle}>Crie sua conta para começar</p>
+            
             <form onSubmit={handleSubmit}>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Nome:</label>
-                    <input name="nome" type="text" onChange={handleChange} required style={styles.input} />
+                    <label style={styles.label}>Nome Completo</label>
+                    <input 
+                        name="nome" 
+                        type="text" 
+                        placeholder="Seu nome" 
+                        value={formData.nome}
+                        onChange={handleChange} 
+                        required 
+                        style={styles.input} 
+                    />
                 </div>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Email:</label>
-                    <input name="email" type="email" onChange={handleChange} required style={styles.input} />
+                    <label style={styles.label}>Email Acadêmico</label>
+                    <input 
+                        name="email" 
+                        type="email" 
+                        placeholder="email@exemplo.com" 
+                        value={formData.email}
+                        onChange={handleChange} 
+                        required 
+                        style={styles.input} 
+                    />
                 </div>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Senha:</label>
-                    <input name="senha" type="password" onChange={handleChange} required style={styles.input} />
+                    <label style={styles.label}>Senha</label>
+                    <input 
+                        name="senha" 
+                        type="password" 
+                        placeholder="Mínimo 4 caracteres" 
+                        value={formData.senha}
+                        onChange={handleChange} 
+                        required 
+                        minLength="4"
+                        style={styles.input} 
+                    />
                 </div>
                 
-                {/* Campo opcional para facilitar testes de Admin */}
-                <div style={styles.inputGroup}>
-                    <label style={styles.adminLabel}>Código Admin (Opcional):</label>
-                    <input name="adminCode" type="text" placeholder="Digite admin123 para ser Admin" onChange={handleChange} style={styles.input} />
+                <div style={styles.adminBox}>
+                    <label style={styles.adminLabel}>Acesso Especial (Opcional)</label>
+                    <input 
+                        name="adminCode" 
+                        type="text" 
+                        placeholder="Código de convite" 
+                        value={formData.adminCode}
+                        onChange={handleChange} 
+                        style={{...styles.input, backgroundColor: '#fff', padding: '8px 12px'}} 
+                    />
                 </div>
 
-                <button type="submit" style={styles.button}>
-                    Cadastrar
+                <button 
+                    type="submit" 
+                    style={styles.button}
+                    onMouseDown={(e) => e.currentTarget.style.transform = 'translate(2px, 2px)'}
+                    onMouseUp={(e) => e.currentTarget.style.transform = 'translate(0, 0)'}
+                >
+                    Criar minha conta
                 </button>
             </form>
             <p style={styles.linkText}>
-                Já tem conta? <Link to="/" style={{ color: '#3b82f6', fontWeight: 'bold' }}>Fazer Login</Link>
+                Já faz parte? <Link to="/" style={{ color: '#0f172a', fontWeight: '900', textDecoration: 'underline' }}>Fazer Login</Link>
             </p>
         </div>
     </div>

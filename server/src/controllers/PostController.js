@@ -15,14 +15,28 @@ exports.createPost = async (req, res) => {
     }
 };
 
-// 2. Listar Postagens
+// 2. Listar Postagens (REESCRITA COM BUSCA)
 exports.getAllPosts = async (req, res) => {
     try {
-        const posts = await Post.find()
-            .populate('autor', 'nome email')
+        const { search } = req.query; // Pega o termo de busca da URL
+        let filtro = {};
+
+        // Se houver busca, aplica Regex no campo 'conteudo'
+        if (search) {
+            filtro = {
+                conteudo: { 
+                    $regex: search, 
+                    $options: 'i' // 'i' faz ignorar maiúsculas/minúsculas
+                }
+            };
+        }
+
+        const posts = await Post.find(filtro)
+            .populate('autor', 'nome email role')
             .sort({ dataCriacao: -1 })
             .lean();
 
+        // Popula os comentários para cada post encontrado
         for (const post of posts) {
             const comments = await Comment.find({ post: post._id })
                 .populate('autor', 'nome')
@@ -67,7 +81,7 @@ exports.addComment = async (req, res) => {
     }
 };
 
-// 5. Atualizar Post (A função que estava faltando!)
+// 5. Atualizar Post
 exports.updatePost = async (req, res) => {
     try {
         const { conteudo } = req.body;
@@ -87,7 +101,6 @@ exports.updatePost = async (req, res) => {
         res.status(500).json({ msg: 'Erro ao atualizar post' });
     }
 };
-// ... (mantenha o código anterior aqui)
 
 // 6. Curtir/Descurtir Post
 exports.likePost = async (req, res) => {
@@ -95,12 +108,9 @@ exports.likePost = async (req, res) => {
         const post = await Post.findById(req.params.id);
         if (!post) return res.status(404).json({ msg: 'Post não encontrado' });
 
-        // Verifica se já curtiu
         if (post.likes.includes(req.user.id)) {
-            // Se já curtiu, remove o like (Pull)
             post.likes.pull(req.user.id);
         } else {
-            // Se não curtiu, adiciona o like (Push)
             post.likes.push(req.user.id);
         }
 
@@ -136,11 +146,10 @@ exports.likeComment = async (req, res) => {
 exports.getPostsByUser = async (req, res) => {
     try {
         const posts = await Post.find({ autor: req.params.userId })
-            .populate('autor', 'nome email')
+            .populate('autor', 'nome email role')
             .sort({ dataCriacao: -1 })
             .lean();
 
-        // Popula comentários também
         for (const post of posts) {
             const comments = await Comment.find({ post: post._id })
                 .populate('autor', 'nome')
